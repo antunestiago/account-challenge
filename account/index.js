@@ -1,6 +1,6 @@
 const writeOutput = require('../writer-output/index')
 
-const accounts = [];
+let accounts = [];
 
 exports.initializeAccount = (payload) => {
     if(payloadValidation(payload)) {
@@ -13,7 +13,7 @@ exports.initializeAccount = (payload) => {
         return false;
     }
 
-    accounts.push({payload});
+    accounts.push(payload);
 
 
     writeOutput.writeOutputPayload({ 
@@ -29,7 +29,7 @@ function payloadValidation(payload) {
     return Boolean(!payload.name || !payload.document || !payload['available-limit']);
 }
 
-exports.clientExists = (document) => {
+const clientExists = exports.clientExists = (document) => {
     return accounts.some(account => account.document === document);
 }
 
@@ -41,9 +41,13 @@ exports.transferFunds = (senderDocument, receiverDocument, value) => {
     let senderAccount = accounts.find( a => senderDocument === a.document);
     let receiverAccount = accounts.find( a => receiverDocument === a.document);
 
+
+    let newSenderAccount = Object.assign(senderAccount);
+    let newReceiverAccount = Object.assign(receiverAccount);
+
     
-    const newSenderAccount = senderAccount['available-limit'] - value;
-    const newReceiverAccount = receiverAccount['available-limit'] + value;
+    newSenderAccount['available-limit'] = newSenderAccount['available-limit'] - value;
+    newReceiverAccount['available-limit'] = newReceiverAccount['available-limit'] + value;
     
     const oldAccounts = [...accounts];
 
@@ -52,6 +56,7 @@ exports.transferFunds = (senderDocument, receiverDocument, value) => {
         accounts = [...accounts,...[newSenderAccount, newReceiverAccount]];
     } catch (error) {
         accounts = [...oldAccounts];
+        console.log(accounts);
         return new Error("Transaction failed");
     }
 

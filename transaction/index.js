@@ -17,14 +17,14 @@ exports.process = (payload) => {
         return new Error("Transaction Failed.");
     }
 
-    if(isNewTransactionIsAfterTwoMin(payload)) {
+    if(!isNewTransactionIsAfterTwoMin(payload)) {
         writeOutput.writeOutputPayload({"type": "transaction", "status": "failure", "violation": "double_transaction"});
         return new Error("Transaction Failed.");
     }
 
-    if(operateTransaction(senderDocument, receiverDocument, value)) {
+    if(operateTransaction(payload['sender-document'], payload['receiver-document'], payload.value)) {
         result = {
-            "available-limit": senderAccount.available_limit - payload.value, 
+            "available-limit": senderAccount['available-limit'] - payload.value, 
             "receiver-document": payload['receiver-document'], 
             "sender-document": payload['sender-document'],
             "datetime": payload['datetime']
@@ -33,27 +33,39 @@ exports.process = (payload) => {
         writeOutput.writeOutputPayload({"type": "transaction", "status": "success", "result": result});
 
         transactions.push(result);
+
+        return {"status": "Ok"};
     }
 
-    return {"status": "Ok"};
+    return {"status": "Fail"};
+
+    
 }  
 
 function isNewTransactionIsAfterTwoMin(payload) {
     const TWO_MINUTES_IN_SECONDS = 120;
-    const relatedTransactions = transactions.filter(t => {
-        [payload['sender-document'], payload['receiver-document']].includes(t.document);
+
+    let relatedTransactions = transactions.filter(t => {
+        console.log({t});
+        console.log({payload});
+
+        return payload['sender-document'] === t['sender-document'] && payload['receiver-document'] === t['receiver-document'];
     });
+
+    console.log({relatedTransactions});
 
     if(relatedTransactions.length === 0) {
         return true;
     }
 
+
     if(relatedTransactions.length > 1) {
         relatedTransactions.sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
     }
 
-    const diff = (new Date(payload.datetime) - new Date(relatedTransactions[0].datetime));
+    let diff = (new Date(payload.datetime) - new Date(relatedTransactions[0].datetime));
     
+    console.log({diff});
     return diff/1000 > TWO_MINUTES_IN_SECONDS; 
 }
 

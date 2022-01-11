@@ -10,7 +10,7 @@ const handleEvent = (type, payload) => {
     }
 
     if (type === 'transaction') {
-        transaction.transaction()        
+        transaction.process(payload)        
     }
 };
 
