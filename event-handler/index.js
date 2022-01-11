@@ -1,5 +1,6 @@
 const account = require('../account/index');
 const transaction = require('../transaction/index');
+const transaction_history = require('../transaction-history/index');
 
 let allEvents = []; // will work as event buffer
 
@@ -11,6 +12,11 @@ const handleEvent = (type, payload) => {
 
     if (type === 'transaction') {
         transaction.process(payload)        
+    }
+
+
+    if (type === 'transaction_history') {
+        transaction_history.history(payload)        
     }
 };
 

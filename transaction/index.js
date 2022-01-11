@@ -1,5 +1,6 @@
 const writeOutput = require('../writer-output')
 const account = require('../account/index');
+const transaction_history = require('../transaction-history/index');
 const { read } = require('fs');
 const transactions = [];
 
@@ -12,7 +13,7 @@ exports.process = (payload) => {
 
     senderAccount = account.getAccount(payload['sender-document']);
 
-    if(payload.value > senderAccount.available_limit) {
+    if(payload.value > senderAccount['available-limit']) {
         writeOutput.writeOutputPayload({"type": "transaction", "status": "failure", "violation": "insufficient_limit"});
         return new Error("Transaction Failed.");
     }
@@ -24,7 +25,7 @@ exports.process = (payload) => {
 
     if(operateTransaction(payload['sender-document'], payload['receiver-document'], payload.value)) {
         result = {
-            "available-limit": senderAccount['available-limit'] - payload.value, 
+            "available-limit": senderAccount['available-limit'], 
             "receiver-document": payload['receiver-document'], 
             "sender-document": payload['sender-document'],
             "datetime": payload['datetime']
@@ -32,27 +33,29 @@ exports.process = (payload) => {
 
         writeOutput.writeOutputPayload({"type": "transaction", "status": "success", "result": result});
 
-        transactions.push(result);
+        creditTransaction ={...result}; 
+        debitTransaction = {...result}; 
+
+        creditTransaction['value'] = payload.value;
+        creditTransaction['account'] = payload['receiver-document'];
+
+        debitTransaction['value'] = -payload.value;
+        debitTransaction['account'] = payload['sender-document']; 
+        transaction_history.addTransactionHistory(creditTransaction);
+        transaction_history.addTransactionHistory(debitTransaction);
 
         return {"status": "Ok"};
     }
 
     return {"status": "Fail"};
-
-    
 }  
 
 function isNewTransactionIsAfterTwoMin(payload) {
     const TWO_MINUTES_IN_SECONDS = 120;
 
     let relatedTransactions = transactions.filter(t => {
-        console.log({t});
-        console.log({payload});
-
         return payload['sender-document'] === t['sender-document'] && payload['receiver-document'] === t['receiver-document'];
     });
-
-    console.log({relatedTransactions});
 
     if(relatedTransactions.length === 0) {
         return true;
@@ -65,7 +68,6 @@ function isNewTransactionIsAfterTwoMin(payload) {
 
     let diff = (new Date(payload.datetime) - new Date(relatedTransactions[0].datetime));
     
-    console.log({diff});
     return diff/1000 > TWO_MINUTES_IN_SECONDS; 
 }
 
@@ -82,4 +84,8 @@ function operateTransaction(senderDocument, receiverDocument, value) {
     }
     
     return true;
+}
+
+exports.getTransactionsByDocument = (document) => {
+    return transactions.filter(t => [t['sender-document'],t['receiver-document']].includes(document));
 }
