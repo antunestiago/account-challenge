@@ -4,8 +4,6 @@ exports.writeOutputPayload = (content) => {
 
   try {
     const data = fs.readFileSync('./output.json', 'utf8')
-    console.log(data)
-
     obj = JSON.parse(data); //now it an object
     obj.push(content); //add some data
     json = JSON.stringify(obj); //convert it back to json
