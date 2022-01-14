@@ -51,3 +51,4 @@ Após isso o próximo passo é executar a request e um  arquivo chamado output.j
 
 Gif de exemplo:
 
+![exemplo](https://user-images.githubusercontent.com/20117606/149432429-7f8cf8b1-119b-4a4d-adf8-312abe927fae.gif)
